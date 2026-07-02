@@ -6,14 +6,14 @@ type Phase = "idle" | "hovering" | "scanning" | "identified" | "gating" | "falli
 
 interface WasteItem { id: WasteType; label: string; emoji: string; desc: string; color: string; binIdx: number; confidence: number; }
 const ITEMS: WasteItem[] = [
-  { id:"plastic", label:"Plastic Bottle", emoji:"🍶", desc:"PET · 500ml", color:"#3b82f6", binIdx:0, confidence:95 },
-  { id:"paper",   label:"Newspaper",      emoji:"📰", desc:"Cellulose paper", color:"#eab308", binIdx:2, confidence:97 },
-  { id:"organic", label:"Banana Peel",    emoji:"🍌", desc:"Organic waste",   color:"#22c55e", binIdx:1, confidence:93 },
+  { id:"plastic", label:"Plastic / Can",  emoji:"🥤", desc:"PET · Aluminium", color:"#f97316", binIdx:0, confidence:95 },
+  { id:"paper",   label:"Newspaper",      emoji:"📰", desc:"Cellulose paper", color:"#2563eb", binIdx:2, confidence:97 },
+  { id:"organic", label:"Glass Bottle",   emoji:"🫙", desc:"Glass material",  color:"#92400e", binIdx:1, confidence:93 },
 ];
 const BINS = [
-  { label:"PLASTIC", color:"#3b82f6", bg:"#1d4ed8", light:"#93c5fd", icon:"♻" },
-  { label:"ORGANIC", color:"#22c55e", bg:"#15803d", light:"#86efac", icon:"🌿" },
-  { label:"PAPER",   color:"#eab308", bg:"#a16207", light:"#fde047", icon:"📰" },
+  { label:"CAN & PLASTIC", color:"#f97316", bg:"#ea580c", light:"#fdba74" },
+  { label:"GLASS",          color:"#92400e", bg:"#78350f", light:"#d97706" },
+  { label:"PAPER",          color:"#2563eb", bg:"#1d4ed8", light:"#93c5fd" },
 ];
 const GATE_ANGLES = [-36, 0, 36];
 const ITEM_DROP_X = [52, 152, 252]; // bin center X in robot SVG
@@ -25,10 +25,10 @@ export default function SortingDemo({ onSorted, fills }: Props) {
   const [active, setActive] = useState<WasteItem>(ITEMS[0]);
   const [scanPct, setScanPct] = useState(0);
   const [gateAngle, setGateAngle] = useState(0);
-  const [localFills, setLocalFills] = useState(fills);
+  const [localFills, setLocalFills] = useState<Record<WasteType, number>>(fills);
   const [splashIdx, setSplashIdx] = useState<number | null>(null);
-  const [log, setLog] = useState<string[]>(["System ready. Select a waste item to begin."]);
-  const [sortCount, setSortCount] = useState({ plastic:0, organic:0, paper:0 });
+  const [log, setLog] = useState<string[]>(["System ready. Select a waste item to begin."]);  
+  const [sortCount, setSortCount] = useState<Record<WasteType, number>>({ plastic:0, organic:0, paper:0 });
   const logRef = useRef<HTMLDivElement>(null);
 
   const busy = !["idle","done"].includes(phase);
@@ -411,7 +411,7 @@ function RobotFrontSVG({ phase, active, gateAngle, fills, splashIdx, scanPct }: 
         {phase === "idle" || phase === "done" ? "Ready for Input" :
          phase === "scanning"   ? `Scanning… ${Math.round(scanPct)}%` :
          phase === "identified" ? `Detected: ${active.label}` :
-         phase === "gating"     ? `Routing → ${["PLASTIC","ORGANIC","PAPER"][active.binIdx]}` :
+         phase === "gating"     ? `Routing → ${["CAN/PLASTIC","GLASS","PAPER"][active.binIdx]}` :
          phase === "falling"    ? "Sorting waste…" : "Sort complete ✓"}
       </text>
 
@@ -547,15 +547,15 @@ function RobotFrontSVG({ phase, active, gateAngle, fills, splashIdx, scanPct }: 
               stroke={gateAngle !== 0 && active.binIdx === i ? b.color : "#1e3a5f"}
               strokeWidth={gateAngle !== 0 && active.binIdx === i ? 2 : 1}
               style={{ filter: gateAngle !== 0 && active.binIdx === i ? `drop-shadow(0 0 4px ${b.color})` : "none" }} />
-            {/* Icon */}
-            <text x={bx+bw/2} y={by+bh*0.42} textAnchor="middle" dominantBaseline="middle"
-              fontSize="32" fill={b.color} opacity="0.18">{b.icon}</text>
             {/* Fill % */}
             <text x={bx+bw/2} y={by+22} textAnchor="middle" fontSize="10" fontWeight="700" fill={b.light}>{fills[i]}%</text>
             <rect x={bx+10} y={by+26} width={bw-20} height="4" rx="2" fill="#0d2040" />
             <motion.rect x={bx+10} y={by+26} height="4" rx="2" fill={b.light}
               animate={{ width: (bw-20)*fills[i]/100 }} transition={{ duration:0.8 }} />
-            {/* Label */}
+            {/* Recycle icon (center) */}
+            <text x={bx+bw/2} y={by+bh*0.45} textAnchor="middle" dominantBaseline="middle"
+              fontSize="36" fill="white" opacity="0.85">♻</text>
+            {/* Label (bottom) */}
             <rect x={bx+10} y={by+bh-22} width={bw-20} height="16" rx="5" fill={b.bg} opacity="0.8" />
             <text x={bx+bw/2} y={by+bh-11} textAnchor="middle" fontSize="7.5" fontWeight="800" fill="white">{b.label}</text>
 

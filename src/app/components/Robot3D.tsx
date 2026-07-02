@@ -359,16 +359,16 @@ function InternalView() {
 
           {/* Three bins */}
           {[
-            { x: 10,  color: "#1d4ed8", light: "#3b82f6", label: "PLASTIC", fill: 0.3 },
-            { x: 78,  color: "#15803d", light: "#22c55e", label: "ORGANIC", fill: 0.45 },
-            { x: 146, color: "#a16207", light: "#eab308", label: "PAPER",   fill: 0.19 },
+            { x: 10,  color: "#ea580c", light: "#f97316", label: "CAN/PLASTIC", fill: 0.3 },
+            { x: 78,  color: "#78350f", light: "#92400e", label: "GLASS",       fill: 0.45 },
+            { x: 146, color: "#1d4ed8", light: "#2563eb", label: "PAPER",       fill: 0.19 },
           ].map(b => (
             <g key={b.label}>
               <rect x={b.x} y="185" width="60" height="120" rx="4" fill={b.color} opacity="0.12" stroke={b.light} strokeWidth="1" />
               <rect x={b.x+2} y={185+120*(1-b.fill)} width="56" height={120*b.fill} rx="3" fill={b.color} opacity="0.5" />
               <rect x={b.x+4} y={185+120*(1-b.fill)} width="52" height="3" rx="1.5" fill={b.light} opacity="0.7" />
               <text x={b.x+30} y="218" textAnchor="middle" fontSize="16" fill={b.light} opacity="0.2">
-                {b.label==="PLASTIC"?"♻":b.label==="ORGANIC"?"🌿":"📰"}
+                {b.label==="CAN/PLASTIC"?"♻":b.label==="GLASS"?"🫙":"📰"}
               </text>
               <text x={b.x+30} y="300" textAnchor="middle" fontSize="6" fontWeight="700" fill={b.light}>{b.label}</text>
               <text x={b.x+30} y="310" textAnchor="middle" fontSize="5.5" fill={b.light} opacity="0.7">

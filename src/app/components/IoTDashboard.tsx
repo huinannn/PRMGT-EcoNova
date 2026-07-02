@@ -1,18 +1,23 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
-  LineChart, Line, AreaChart, Area,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis
 } from "recharts";
 import type { SortStats } from "../App";
+
+interface HistoryEntry {
+  time: string;
+  plastic: number;
+  organic: number;
+  paper: number;
+}
 
 interface Props { stats: SortStats; fills: { plastic: number; organic: number; paper: number }; }
 
 const BIN_CFG = [
-  { key:"plastic", label:"Plastic",  color:"#3b82f6", light:"#93c5fd", icon:"♻",  desc:"PET / HDPE" },
-  { key:"organic", label:"Organic",  color:"#22c55e", light:"#86efac", icon:"🌿", desc:"Food waste" },
-  { key:"paper",   label:"Paper",    color:"#eab308", light:"#fde047", icon:"📰", desc:"Cardboard" },
+  { key:"plastic", label:"Can & Plastic", color:"#f97316", light:"#fdba74", icon:"♻",  desc:"PET / Cans" },
+  { key:"organic", label:"Glass",         color:"#92400e", light:"#d97706", icon:"🫙", desc:"Glass items" },
+  { key:"paper",   label:"Paper",         color:"#2563eb", light:"#93c5fd", icon:"📰", desc:"Cardboard" },
 ] as const;
 
 function StatCard({ label, value, unit, sub, color = "#60a5fa", icon }: {
@@ -86,9 +91,9 @@ export default function IoTDashboard({ stats, fills }: Props) {
   const hhmmss = (s: number) => `${String(Math.floor(s/3600)).padStart(2,"0")}:${String(Math.floor((s%3600)/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
 
   const pieData = [
-    { name:"Plastic", value: stats.plastic, color:"#3b82f6" },
-    { name:"Organic", value: stats.organic, color:"#22c55e" },
-    { name:"Paper",   value: stats.paper,   color:"#eab308" },
+    { name:"Can & Plastic", value: stats.plastic, color:"#f97316" },
+    { name:"Glass",         value: stats.organic, color:"#92400e" },
+    { name:"Paper",         value: stats.paper,   color:"#2563eb" },
   ];
 
   const fillArr = [fills.plastic, fills.organic, fills.paper];
@@ -121,9 +126,9 @@ export default function IoTDashboard({ stats, fills }: Props) {
       <div className="grid grid-cols-6 gap-4 mb-5">
         <StatCard label="Total Sorted" value={total} unit="items" sub="Since system start" color="#60a5fa" icon="🗂" />
         <StatCard label="AI Accuracy" value="98.7" unit="%" sub="Across all categories" color="#34d399" icon="🎯" />
-        <StatCard label="Plastic Sorted" value={stats.plastic} unit="items" sub={`${total>0?Math.round(stats.plastic/total*100):0}% of total`} color="#3b82f6" icon="♻" />
-        <StatCard label="Organic Sorted" value={stats.organic} unit="items" sub={`${total>0?Math.round(stats.organic/total*100):0}% of total`} color="#22c55e" icon="🌿" />
-        <StatCard label="Paper Sorted" value={stats.paper} unit="items" sub={`${total>0?Math.round(stats.paper/total*100):0}% of total`} color="#eab308" icon="📰" />
+        <StatCard label="Can/Plastic Sorted" value={stats.plastic} unit="items" sub={`${total>0?Math.round(stats.plastic/total*100):0}% of total`} color="#f97316" icon="♻" />
+        <StatCard label="Glass Sorted"       value={stats.organic} unit="items" sub={`${total>0?Math.round(stats.organic/total*100):0}% of total`} color="#92400e" icon="🫙" />
+        <StatCard label="Paper Sorted"       value={stats.paper}   unit="items" sub={`${total>0?Math.round(stats.paper/total*100):0}% of total`}   color="#2563eb" icon="📰" />
         <StatCard label="CO₂ Saved" value={(total*0.12).toFixed(1)} unit="kg" sub="Est. carbon offset" color="#a78bfa" icon="🌍" />
       </div>
 
@@ -173,9 +178,9 @@ export default function IoTDashboard({ stats, fills }: Props) {
               <YAxis tick={{ fill:"#475569", fontSize:10 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={CUSTOM_TOOLTIP_STYLE} />
               <Legend wrapperStyle={{ fontSize:10, color:"#64748b" }} />
-              <Bar dataKey="plastic" name="Plastic" fill="#3b82f6" radius={[3,3,0,0]} />
-              <Bar dataKey="organic" name="Organic" fill="#22c55e" radius={[3,3,0,0]} />
-              <Bar dataKey="paper"   name="Paper"   fill="#eab308" radius={[3,3,0,0]} />
+              <Bar dataKey="plastic" name="Can & Plastic" fill="#f97316" radius={[3,3,0,0]} />
+              <Bar dataKey="organic" name="Glass"         fill="#92400e" radius={[3,3,0,0]} />
+              <Bar dataKey="paper"   name="Paper"         fill="#2563eb" radius={[3,3,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -210,14 +215,14 @@ export default function IoTDashboard({ stats, fills }: Props) {
         <div className="col-span-2 bg-[#0d1f3c] border border-white/8 rounded-2xl p-4">
           <h3 className="text-xs font-bold text-white/50 uppercase tracking-wider mb-4">Cumulative Sort Trend</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={stats.history.map((h,i,arr)=>({
+            <AreaChart data={stats.history.map((h: HistoryEntry, i: number, arr: HistoryEntry[])=>({
               time: h.time,
-              plastic: arr.slice(0,i+1).reduce((s,r)=>s+r.plastic,0),
-              organic: arr.slice(0,i+1).reduce((s,r)=>s+r.organic,0),
-              paper:   arr.slice(0,i+1).reduce((s,r)=>s+r.paper,0),
+              plastic: arr.slice(0,i+1).reduce((s: number, r: HistoryEntry)=>s+r.plastic,0),
+              organic: arr.slice(0,i+1).reduce((s: number, r: HistoryEntry)=>s+r.organic,0),
+              paper:   arr.slice(0,i+1).reduce((s: number, r: HistoryEntry)=>s+r.paper,0),
             }))} margin={{ top:4, right:10, bottom:0, left:-20 }}>
               <defs>
-                {[["plastic","#3b82f6"],["organic","#22c55e"],["paper","#eab308"]].map(([k,c])=>(
+                {[["plastic","#f97316"],["organic","#92400e"],["paper","#2563eb"]].map(([k,c])=>(
                   <linearGradient key={k} id={`grad-${k}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={c} stopOpacity={0.4} />
                     <stop offset="95%" stopColor={c} stopOpacity={0.02} />
@@ -228,11 +233,11 @@ export default function IoTDashboard({ stats, fills }: Props) {
               <XAxis dataKey="time" tick={{ fill:"#475569", fontSize:10 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill:"#475569", fontSize:10 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={CUSTOM_TOOLTIP_STYLE} />
-              <Area type="monotone" dataKey="plastic" name="Plastic" stroke="#3b82f6" strokeWidth={2}
+              <Area type="monotone" dataKey="plastic" name="Can & Plastic" stroke="#f97316" strokeWidth={2}
                 fill="url(#grad-plastic)" dot={false} />
-              <Area type="monotone" dataKey="organic" name="Organic" stroke="#22c55e" strokeWidth={2}
+              <Area type="monotone" dataKey="organic" name="Glass" stroke="#92400e" strokeWidth={2}
                 fill="url(#grad-organic)" dot={false} />
-              <Area type="monotone" dataKey="paper" name="Paper" stroke="#eab308" strokeWidth={2}
+              <Area type="monotone" dataKey="paper" name="Paper" stroke="#2563eb" strokeWidth={2}
                 fill="url(#grad-paper)" dot={false} />
             </AreaChart>
           </ResponsiveContainer>
@@ -248,9 +253,9 @@ export default function IoTDashboard({ stats, fills }: Props) {
             {[
               { name:"Camera Module",           status:"ACTIVE",  detail:"1080p · 30fps",       ok:true },
               { name:"Raspberry Pi 4B",     status:"ONLINE",  detail:"CPU 34% · RAM 62%",   ok:true },
-              { name:"Servo Motor #1 (Plastic)", status:"READY",  detail:"Angle: 0°",      ok:true },
-              { name:"Servo Motor #2 (Organic)", status:"READY",  detail:"Angle: 0°",      ok:true },
-              { name:"Servo Motor #3 (Paper)",   status:"READY",  detail:"Angle: 0°",      ok:true },
+              { name:"Servo Motor #1 (Can/Plastic)", status:"READY", detail:"Angle: 0°", ok:true },
+              { name:"Servo Motor #2 (Glass)",       status:"READY", detail:"Angle: 0°", ok:true },
+              { name:"Servo Motor #3 (Paper)",       status:"READY", detail:"Angle: 0°", ok:true },
               { name:"Ultrasonic Sensor ×4", status:"ACTIVE", detail:"Range: 0–50cm",       ok:true },
               { name:"Wi-Fi Module",         status:"ONLINE",  detail:"192.168.1.42 · -42dBm",ok:true},
               { name:"Battery",             status:"CHARGING", detail:"12V · 87% · 22Ah",  ok:true },
@@ -323,11 +328,11 @@ export default function IoTDashboard({ stats, fills }: Props) {
             <h3 className="text-xs font-bold text-white/50 uppercase tracking-wider mb-3">AI Recognition Log</h3>
             <div className="flex flex-col gap-1.5">
               {[
-                { time:"13:42:01", item:"Plastic Bottle", cat:"PLASTIC", conf:95, color:"#3b82f6" },
-                { time:"13:38:44", item:"Banana Peel",    cat:"ORGANIC", conf:93, color:"#22c55e" },
-                { time:"13:35:12", item:"Newspaper",      cat:"PAPER",   conf:97, color:"#eab308" },
-                { time:"13:31:55", item:"Plastic Cup",    cat:"PLASTIC", conf:91, color:"#3b82f6" },
-                { time:"13:28:30", item:"Apple Core",     cat:"ORGANIC", conf:88, color:"#22c55e" },
+                { time:"13:42:01", item:"Plastic Bottle", cat:"CAN/PLASTIC", conf:95, color:"#f97316" },
+                { time:"13:38:44", item:"Glass Bottle",   cat:"GLASS",       conf:93, color:"#92400e" },
+                { time:"13:35:12", item:"Newspaper",      cat:"PAPER",       conf:97, color:"#2563eb" },
+                { time:"13:31:55", item:"Aluminium Can",  cat:"CAN/PLASTIC", conf:91, color:"#f97316" },
+                { time:"13:28:30", item:"Wine Bottle",    cat:"GLASS",       conf:88, color:"#92400e" },
               ].map((ev,i)=>(
                 <div key={i} className="flex items-center gap-2 py-1 border-b border-white/5">
                   <span className="text-[9px] text-white/25 font-mono w-14">{ev.time}</span>
