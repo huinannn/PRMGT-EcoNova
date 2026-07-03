@@ -70,7 +70,7 @@ const PRESETS: Record<string,[number,number]> = {
   left:  [  0, -90],
   right: [  0,  90],
   top:   [-88,  18],
-  down:  [ 90,   0],
+  bottom:[ 90,   0],
 };
 
 function Face({ w, h, tf, hidden=false, opacity=1, overflow="hidden", bfv="hidden", style, children }: {
@@ -1746,7 +1746,7 @@ export default function SmartBin3D() {
           <CtrlBtn onClick={()=>setZoom(z=>Math.min(1.7,z+0.12))} label="ZOOM +" title="Zoom In"/>
           <CtrlBtn onClick={()=>setZoom(z=>Math.max(0.38,z-0.12))} label="ZOOM −" title="Zoom Out"/>
           <div className="w-px h-6 bg-slate-200 mx-1"/>
-          {(["front","back","left","right","top","down"] as const).map(p=>(
+          {(["front","back","left","right","top","bottom"] as const).map(p=>(
             <CtrlBtn key={p} onClick={()=>goPreset(p)} label={p.toUpperCase()} title={`${p} view`}/>
           ))}
           <CtrlBtn
