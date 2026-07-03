@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react'
 function assetAssetResolver() {
   return {
     name: 'asset-asset-resolver',
-    resolveId(id) {
+    resolveId(id: string) {
       if (id.startsWith('asset:asset/')) {
         const filename = id.replace('asset:asset/', '')
         return path.resolve(__dirname, 'src/assets', filename)
@@ -18,6 +18,7 @@ function assetAssetResolver() {
 export default defineConfig({
   server: {
     port: 3000,
+    allowedHosts: ['.ngrok-free.app'],
   },
   plugins: [
     assetAssetResolver(),

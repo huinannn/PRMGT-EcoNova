@@ -7,6 +7,9 @@ import { motion, AnimatePresence } from "motion/react";
 ───────────────────────────────────────────────────────────────── */
 const W = 460, H = 420, D = 210;
 const HW = 230, HH = 210, HD = 105;
+// Caster wheels (CasterWheel3D) sit this far in from each of the box's 4 bottom
+// corners, in world units, along both the width (x) and depth (z) axes.
+const WHEEL_INSET = 45;
 
 /* ─── Top wedge shape ─────────────────────────────────────────── */
 const SLOPE   = 160; // vertical rise of the slope
@@ -482,15 +485,6 @@ function FrontFace({ phase, item, fills, scanPct, ex }:{
         {/* ═══ BRAND STRIP ═══ */}
         <text x={W/2} y={BY+BH+26} textAnchor="middle" fontSize="10" fontWeight="900"
           fill="#8898a8" letterSpacing="4" opacity="0.85">SMART TRASH BIN</text>
-
-        {/* ═══ CASTER WHEELS — peek below body ═══ */}
-        {[52, W-52].map((wx,i)=>(
-          <g key={i}>
-            <circle cx={wx} cy={H-10} r="13"  fill="#1f2937"/>
-            <circle cx={wx} cy={H-10} r="9"   fill="#2d3748"/>
-            <circle cx={wx} cy={H-10} r="4"   fill="#f0f2f5"/>
-          </g>
-        ))}
       </svg>
     </Face>
   );
@@ -583,13 +577,6 @@ function RightFace({ ex, onQrScan, qrScanning, qrDone }: { ex: number; onQrScan:
             <text x={D/2+8} y={H-77} textAnchor="middle" fontSize="5.5" fill="#4a5568" letterSpacing="0.5">IN</text>
           </g>
         </g>
-        {[18, D-18].map((wx,i)=>(
-          <g key={i}>
-            <circle cx={wx} cy={TH-10} r="13" fill="#1f2937"/>
-            <circle cx={wx} cy={TH-10} r="9"  fill="#2d3748"/>
-            <circle cx={wx} cy={TH-10} r="4"  fill="#f0f2f5"/>
-          </g>
-        ))}
       </svg>
     </Face>
   );
@@ -621,13 +608,6 @@ function LeftFace({ hidden, ex }: { hidden: boolean; ex: number }) {
             <SideFaceContent/>
           </g>
         </g>
-        {[18, D-18].map((wx,i)=>(
-          <g key={i}>
-            <circle cx={wx} cy={TH-10} r="13" fill="#1f2937"/>
-            <circle cx={wx} cy={TH-10} r="9"  fill="#2d3748"/>
-            <circle cx={wx} cy={TH-10} r="4"  fill="#f0f2f5"/>
-          </g>
-        ))}
       </svg>
     </Face>
   );
@@ -681,9 +661,10 @@ function InteriorWalls({ ex }: { ex:number }) {
         <div style={{ width:"100%", height:"100%",
           background:"linear-gradient(90deg, #d0d5e5 0%, #e6eaf3 10%, #eef0f7 50%, #e2e6f0 90%, #d0d5e5 100%)" }}/>
       </Face>
-      {/* Interior floor — sits clearly above BottomFace (which is flush with the wheels) so it can't poke past them */}
+      {/* Interior floor — raised to meet the visible edge of the outer body panels (which stop
+          24px short of the true bottom) so it reads as connected instead of floating below a gap */}
       <Face w={W} h={D} bfv="visible" overflow="hidden" style={{ borderRadius:0 }}
-        tf={`rotateX(90deg) translateZ(-${HH-20}px)`}>
+        tf={`rotateX(90deg) translateZ(-${HH-24}px)`}>
         <div style={{ width:"100%", height:"100%",
           background:"linear-gradient(90deg, #d0d5e5 0%, #e6eaf3 10%, #eef0f7 50%, #e2e6f0 90%, #d0d5e5 100%)" }}/>
       </Face>
@@ -1033,6 +1014,53 @@ function InteriorBins({ ex, doorOpen, pulledBins, onPullBin, phase, item }: {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   CASTER WHEEL  — a standalone 3D element (not part of any single
+   face's SVG) built from three perpendicular copies of the same wheel
+   graphic sharing one 3D point: two upright ones (visible face-on from
+   front/back and left/right) plus one lying flat (visible from directly
+   above/below). A flat decal drawn on just one face goes edge-on (and
+   vanishes, or degenerates into a thin sliver) from a perpendicular
+   viewing angle — three orientations sharing one pivot point is what
+   keeps it reading as a single wheel from every angle.
+═══════════════════════════════════════════════════════════════ */
+function CasterWheel3D({ x, z }: { x: number; z: number }) {
+  const gradId = `wheelGrad_${x}_${z}`;
+  const orientations = [
+    { key: "front", rot: "rotateY(0deg)",  bracket: true  },
+    { key: "side",  rot: "rotateY(90deg)", bracket: true  },
+    { key: "top",   rot: "rotateX(90deg)", bracket: false },
+  ];
+  return (
+    <>
+      {orientations.map(({ key, rot, bracket }) => (
+        // Tiny epsilon nudge along each plane's own (rotated) Z axis — otherwise the
+        // planes share one exact 3D point and cross through each other, which puts the
+        // browser's depth sort in a degenerate tie and can hide all of them.
+        <Face key={key} w={40} h={70} bfv="visible" overflow="visible" style={{ borderRadius: 0 }}
+          tf={`translateX(${x}px) translateY(${HH - 4}px) translateZ(${z}px) ${rot} translateZ(0.5px)`}>
+          <svg width="40" height="70" viewBox="0 0 40 70" xmlns="http://www.w3.org/2000/svg" style={{ overflow: "visible" }}>
+            <defs>
+              <radialGradient id={`${gradId}_${key}`} cx="35%" cy="30%">
+                <stop offset="0%"   stopColor="#6b7280"/>
+                <stop offset="30%"  stopColor="#374151"/>
+                <stop offset="65%"  stopColor="#161a24"/>
+                <stop offset="100%" stopColor="#04060a"/>
+              </radialGradient>
+            </defs>
+            {bracket && <>
+              <rect x="5" y="15" width="30" height="13" rx="4" fill="#c9cdd6" stroke="#9aa0ac" strokeWidth="1"/>
+              <rect x="5" y="15" width="30" height="4" rx="2" fill="white" opacity="0.35"/>
+            </>}
+            <circle cx="20" cy="35" r="15" fill={`url(#${gradId}_${key})`} stroke="#04060a" strokeWidth="1"/>
+            <circle cx="15.5" cy="30" r="4.5" fill="white" opacity="0.25"/>
+          </svg>
+        </Face>
+      ))}
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
    BACK FACE  (420 × 360)
 ═══════════════════════════════════════════════════════════════ */
 function BackFace({ ex, doorOpen, onDoorToggle }: {
@@ -1052,14 +1080,6 @@ function BackFace({ ex, doorOpen, onDoorToggle }: {
             <stop offset="100%" stopColor="#d0d5e5"/>
           </linearGradient>
         </defs>
-        {/* Wheels */}
-        {[52, W-52].map((wx,i)=>(
-          <g key={i}>
-            <circle cx={wx} cy={H-10} r="13" fill="#1f2937"/>
-            <circle cx={wx} cy={H-10} r="9"  fill="#2d3748"/>
-            <circle cx={wx} cy={H-10} r="4"  fill="#f0f2f5"/>
-          </g>
-        ))}
       </svg>
 
       {/* ── Animated door panel ── */}
@@ -1088,6 +1108,9 @@ function BackFace({ ex, doorOpen, onDoorToggle }: {
             </linearGradient>
           </defs>
           <rect width={W} height={H-24} fill="url(#doorGrad)"/>
+          {/* Decorative frame outline */}
+          <rect x="14" y="14" width={W-28} height={H-24-28} rx="18"
+            fill="none" stroke="#aab0c0" strokeWidth="1.25" opacity="0.8"/>
           {/* Hinges */}
           {[50, 240].map((hy,i)=>(
             <g key={i}>
@@ -1238,11 +1261,14 @@ function FlatTopFace({ ex }: { ex: number }) {
 
 function SlopeBackFill({ ex }: { ex: number }) {
   /* Vertical fill at z=-(HD+ex), from y=-(HH+SLOPE) to y=-HH.
-     rotateY(180deg) translateY(SLOPE_CY) translateZ(HD+ex) → world z=-(HD+ex). */
+     rotateY(180deg) translateY(SLOPE_CY) translateZ(HD+ex) → world z=-(HD+ex).
+     Extended 3px past its bottom edge (top edge left untouched) to overlap BackFace
+     underneath and hide the antialiasing seam where the two flat 3D planes meet. */
+  const OVERLAP = 3;
   return (
-    <Face w={W} h={SLOPE} bfv="visible" style={{ borderRadius: 0 }}
-      tf={`rotateY(180deg) translateY(${SLOPE_CY}px) translateZ(${HD + ex}px)`}>
-      <svg width={W} height={SLOPE} viewBox={`0 0 ${W} ${SLOPE}`} xmlns="http://www.w3.org/2000/svg">
+    <Face w={W} h={SLOPE+OVERLAP} bfv="visible" style={{ borderRadius: 0 }}
+      tf={`rotateY(180deg) translateY(${SLOPE_CY + OVERLAP/2}px) translateZ(${HD + ex}px)`}>
+      <svg width={W} height={SLOPE+OVERLAP} viewBox={`0 0 ${W} ${SLOPE+OVERLAP}`} xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="backFillGrad" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%"   stopColor="#d0d5e5"/>
@@ -1252,7 +1278,7 @@ function SlopeBackFill({ ex }: { ex: number }) {
             <stop offset="100%" stopColor="#d0d5e5"/>
           </linearGradient>
         </defs>
-        <rect width={W} height={SLOPE} fill="url(#backFillGrad)"/>
+        <rect width={W} height={SLOPE+OVERLAP} fill="url(#backFillGrad)"/>
       </svg>
     </Face>
   );
@@ -1482,7 +1508,7 @@ export default function SmartBin3D() {
   const [phase, setPhase] = useState<SortPhase>("idle");
   const [activeItem, setActiveItem] = useState<WasteItem>(WASTE[0]);
   const [scanPct, setScanPct] = useState(0);
-  const [fills, setFills] = useState([29, 18, 43, 7]);
+  const [fills, setFills] = useState([0, 0, 0, 0]);
 
   const [doorOpen, setDoorOpen] = useState(false);
   const [binsVisible, setBinsVisible] = useState(false);
@@ -1510,6 +1536,7 @@ export default function SmartBin3D() {
   }
 
   const drag = useRef<{sx:number;sy:number;rx:number;ry:number}|null>(null);
+  const pinch = useRef<{dist:number;z:number}|null>(null);
   const raf  = useRef<number>(0);
 
   useEffect(()=>{
@@ -1570,19 +1597,42 @@ export default function SmartBin3D() {
   },[]);
   const onUp=useCallback(()=>{ drag.current=null; },[]);
 
+  const touchDist=(e:React.TouchEvent)=>{
+    const [a,b]=[e.touches[0],e.touches[1]];
+    return Math.hypot(b.clientX-a.clientX, b.clientY-a.clientY);
+  };
   const onTouchStart=useCallback((e:React.TouchEvent)=>{
     setAutoRotate(false);
+    if(e.touches.length>=2){
+      drag.current=null;
+      pinch.current={dist:touchDist(e),z:zoom};
+      return;
+    }
+    pinch.current=null;
     const t=e.touches[0];
     drag.current={sx:t.clientX,sy:t.clientY,rx:rotX,ry:rotY};
-  },[rotX,rotY]);
+  },[rotX,rotY,zoom]);
   const onTouchMove=useCallback((e:React.TouchEvent)=>{
+    if(e.touches.length>=2 && pinch.current){
+      e.preventDefault();
+      const scale=touchDist(e)/pinch.current.dist;
+      setZoom(Math.max(0.38,Math.min(1.7,pinch.current.z*scale)));
+      return;
+    }
     if(!drag.current) return;
     e.preventDefault();
     const t=e.touches[0];
     setRotY(drag.current.ry+(t.clientX-drag.current.sx)*0.36);
     setRotX(Math.max(-82,Math.min(82,drag.current.rx-(t.clientY-drag.current.sy)*0.26)));
   },[]);
-  const onTouchEnd=useCallback(()=>{ drag.current=null; },[]);
+  const onTouchEnd=useCallback((e:React.TouchEvent)=>{
+    drag.current=null;
+    pinch.current=null;
+    if(e.touches.length===1){
+      const t=e.touches[0];
+      drag.current={sx:t.clientX,sy:t.clientY,rx:rotX,ry:rotY};
+    }
+  },[rotX,rotY]);
 
   function goPreset(name:string){
     setAutoRotate(false);
@@ -1680,6 +1730,10 @@ export default function SmartBin3D() {
             <InteriorWalls ex={ex}/>
             <InteriorBins ex={ex} doorOpen={binsVisible} pulledBins={pulledBins} onPullBin={pullBin}
               phase={phase} item={activeItem}/>
+            <CasterWheel3D x={-(HW-WHEEL_INSET)} z={ (HD-WHEEL_INSET)}/>
+            <CasterWheel3D x={ (HW-WHEEL_INSET)} z={ (HD-WHEEL_INSET)}/>
+            <CasterWheel3D x={-(HW-WHEEL_INSET)} z={-(HD-WHEEL_INSET)}/>
+            <CasterWheel3D x={ (HW-WHEEL_INSET)} z={-(HD-WHEEL_INSET)}/>
           </motion.div>
         </div>
       </div>
@@ -1702,7 +1756,7 @@ export default function SmartBin3D() {
             title="Toggle maintenance door"/>
           <div className="w-px h-6 bg-slate-200 mx-1"/>
           <CtrlBtn
-            onClick={() => { setRotX(-24); setRotY(28); setZoom(isMobile ? 0.42 : 0.76); setAutoRotate(false); setFills([29, 18, 43, 7]); }}
+            onClick={() => { setRotX(-24); setRotY(28); setZoom(isMobile ? 0.42 : 0.76); setAutoRotate(false); setFills([0, 0, 0, 0]); }}
             label="RESET"
             title="Reset view and bin fills"/>
         </div>
